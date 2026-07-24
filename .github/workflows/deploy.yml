@@ -19,10 +19,10 @@ jobs:
         uses: databricks/setup-cli@main
 
       - name: Validate bundle
-        run: databricks bundle validate --var="databricks_host=${{ secrets.DATABRICKS_HOST }}"
+        run: databricks bundle validate --target dev
 
       - name: Deploy bundle
-        run: databricks bundle deploy --target dev --var="databricks_host=${{ secrets.DATABRICKS_HOST }}"
+        run: databricks bundle deploy --target dev
 
       - name: Run batch job
-        run: databricks bundle run brightcart_batch_pipeline --target dev --var="databricks_host=${{ secrets.DATABRICKS_HOST }}"
+        run: databricks bundle run brightcart_batch_pipeline --target dev

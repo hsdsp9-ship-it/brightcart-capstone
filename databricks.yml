@@ -1,12 +1,12 @@
 bundle:
   name: brightcart_capstone
 
-workspace:
-  host: ${var.databricks_host}
+# workspace.host is intentionally omitted: Databricks does not support variable
+# interpolation for authentication fields. Set the DATABRICKS_HOST (and
+# DATABRICKS_TOKEN) environment variables at run time instead (see
+# .github/workflows/deploy.yml).
 
 variables:
-  databricks_host:
-    description: Databricks workspace host
   catalog_name:
     default: harpalsingh
   schema_name:
