@@ -1,5 +1,7 @@
 # BrightCart Retail Order Analytics — Capstone Project
 
+[![Deploy BrightCart Bundle](https://github.com/hsdsp9-ship-it/brightcart-capstone/actions/workflows/deploy.yml/badge.svg)](https://github.com/hsdsp9-ship-it/brightcart-capstone/actions/workflows/deploy.yml)
+
 A Databricks capstone demonstrating the medallion architecture (Bronze/Silver/Gold), Delta Lake CRUD, incremental ingestion with Auto Loader, structured streaming with `foreachBatch` MERGE upserts, and CI/CD via Databricks Asset Bundles + GitHub Actions.
 
 ## Structure
