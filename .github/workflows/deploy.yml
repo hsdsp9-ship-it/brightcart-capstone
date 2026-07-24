@@ -9,28 +9,14 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
       - name: Install Databricks CLI
-        run: pip install databricks-cli
-
-      - name: Configure Databricks auth
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: |
-          mkdir -p ~/.databricks
-          cat <<EOF > ~/.databrickscfg
-          [DEFAULT]
-          host = $DATABRICKS_HOST
-          token = $DATABRICKS_TOKEN
-          EOF
+        uses: databricks/setup-cli@main
 
       - name: Validate bundle
         run: databricks bundle validate --var="databricks_host=${{ secrets.DATABRICKS_HOST }}"
