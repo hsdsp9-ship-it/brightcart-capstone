@@ -1,0 +1,39 @@
+bundle:
+  name: brightcart_capstone
+
+workspace:
+  host: ${var.databricks_host}
+
+variables:
+  databricks_host:
+    description: Databricks workspace host
+  catalog_name:
+    default: harpalsingh
+  schema_name:
+    default: brightcart
+
+resources:
+  jobs:
+    brightcart_batch_pipeline:
+      name: BrightCart Batch Pipeline
+      tasks:
+        - task_key: bronze_ingestion
+          notebook_task:
+            notebook_path: ./notebooks/02_bronze_ingestion
+        - task_key: silver_enrichment
+          depends_on:
+            - task_key: bronze_ingestion
+          notebook_task:
+            notebook_path: ./notebooks/03_silver_enrichment
+        - task_key: gold_aggregation
+          depends_on:
+            - task_key: silver_enrichment
+          notebook_task:
+            notebook_path: ./notebooks/04_gold_aggregation
+      queue:
+        enabled: true
+
+targets:
+  dev:
+    mode: development
+    default: true
