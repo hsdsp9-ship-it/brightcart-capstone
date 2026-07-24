@@ -18,6 +18,13 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
+      - name: Check required secrets are set
+        run: |
+          if [ -z "$DATABRICKS_HOST" ]; then echo "::error::DATABRICKS_HOST secret is empty or missing in repo Settings > Secrets and variables > Actions"; exit 1; fi
+          if [ -z "$DATABRICKS_TOKEN" ]; then echo "::error::DATABRICKS_TOKEN secret is empty or missing in repo Settings > Secrets and variables > Actions"; exit 1; fi
+          echo "DATABRICKS_HOST is set (length: ${#DATABRICKS_HOST} chars, starts with: ${DATABRICKS_HOST:0:8}...)"
+          echo "DATABRICKS_TOKEN is set (length: ${#DATABRICKS_TOKEN} chars)"
+
       - name: Validate bundle
         run: databricks bundle validate --target dev
 
