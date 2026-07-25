@@ -12,8 +12,11 @@
 # DBTITLE 1,Project configuration
 from pyspark.sql import functions as F
 
-CATALOG = "harpalsingh"
-SCHEMA = "brightcart"
+dbutils.widgets.text("catalog", "harpalsingh")
+dbutils.widgets.text("schema", "brightcart")
+
+CATALOG = dbutils.widgets.get("catalog")
+SCHEMA = dbutils.widgets.get("schema")
 CHECKPOINT_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/checkpoints"
 
 BRONZE_CUSTOMERS = f"{CATALOG}.{SCHEMA}.bronze_customers"

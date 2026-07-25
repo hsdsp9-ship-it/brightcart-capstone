@@ -13,8 +13,11 @@
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType, DateType
 
-CATALOG = "harpalsingh"
-SCHEMA = "brightcart"
+dbutils.widgets.text("catalog", "harpalsingh")
+dbutils.widgets.text("schema", "brightcart")
+
+CATALOG = dbutils.widgets.get("catalog")
+SCHEMA = dbutils.widgets.get("schema")
 RAW_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/raw_data"
 
 CUSTOMERS_PATH = f"{RAW_VOLUME_PATH}/customers.csv"

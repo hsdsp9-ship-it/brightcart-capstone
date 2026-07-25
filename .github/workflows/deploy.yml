@@ -5,6 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      catalog_name:
+        description: 'Unity Catalog catalog name'
+        required: false
+        default: 'harpalsingh'
+      schema_name:
+        description: 'Unity Catalog schema name'
+        required: false
+        default: 'brightcart'
 
 jobs:
   deploy:
@@ -12,6 +21,8 @@ jobs:
     env:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      CATALOG_NAME: ${{ github.event.inputs.catalog_name || 'harpalsingh' }}
+      SCHEMA_NAME: ${{ github.event.inputs.schema_name || 'brightcart' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -24,12 +35,13 @@ jobs:
           if [ -z "$DATABRICKS_TOKEN" ]; then echo "::error::DATABRICKS_TOKEN secret is empty or missing in repo Settings > Secrets and variables > Actions"; exit 1; fi
           echo "DATABRICKS_HOST is set (length: ${#DATABRICKS_HOST} chars, starts with: ${DATABRICKS_HOST:0:8}...)"
           echo "DATABRICKS_TOKEN is set (length: ${#DATABRICKS_TOKEN} chars)"
+          echo "Using catalog_name=$CATALOG_NAME schema_name=$SCHEMA_NAME"
 
       - name: Validate bundle
-        run: databricks bundle validate --target dev
+        run: databricks bundle validate --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME"
 
       - name: Deploy bundle
-        run: databricks bundle deploy --target dev
+        run: databricks bundle deploy --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME"
 
       - name: Run batch job
-        run: databricks bundle run brightcart_batch_pipeline --target dev
+        run: databricks bundle run brightcart_batch_pipeline --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME"

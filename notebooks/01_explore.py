@@ -18,8 +18,11 @@
 # DBTITLE 1,Project configuration
 from pyspark.sql import functions as F
 
-CATALOG = "harpalsingh"
-SCHEMA = "brightcart"
+dbutils.widgets.text("catalog", "harpalsingh")
+dbutils.widgets.text("schema", "brightcart")
+
+CATALOG = dbutils.widgets.get("catalog")
+SCHEMA = dbutils.widgets.get("schema")
 RAW_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/raw_data"
 
 CUSTOMERS_PATH = f"{RAW_VOLUME_PATH}/customers.csv"

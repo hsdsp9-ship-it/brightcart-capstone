@@ -15,8 +15,11 @@
 from delta.tables import DeltaTable
 from pyspark.sql import functions as F
 
-CATALOG = "harpalsingh"
-SCHEMA = "brightcart"
+dbutils.widgets.text("catalog", "harpalsingh")
+dbutils.widgets.text("schema", "brightcart")
+
+CATALOG = dbutils.widgets.get("catalog")
+SCHEMA = dbutils.widgets.get("schema")
 
 BRONZE_CUSTOMERS = f"{CATALOG}.{SCHEMA}.bronze_customers"
 BRONZE_PRODUCTS = f"{CATALOG}.{SCHEMA}.bronze_products"
