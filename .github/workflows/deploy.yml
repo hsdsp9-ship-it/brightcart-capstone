@@ -14,6 +14,10 @@ on:
         description: 'Unity Catalog schema name'
         required: false
         default: 'brightcart'
+      existing_cluster_id:
+        description: 'Existing all-purpose cluster ID to run the job on'
+        required: false
+        default: '0724-105653-1bw7ko28'
 
 jobs:
   deploy:
@@ -23,6 +27,7 @@ jobs:
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       CATALOG_NAME: ${{ github.event.inputs.catalog_name || 'harpalsingh' }}
       SCHEMA_NAME: ${{ github.event.inputs.schema_name || 'brightcart' }}
+      EXISTING_CLUSTER_ID: ${{ github.event.inputs.existing_cluster_id || '0724-105653-1bw7ko28' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -35,13 +40,13 @@ jobs:
           if [ -z "$DATABRICKS_TOKEN" ]; then echo "::error::DATABRICKS_TOKEN secret is empty or missing in repo Settings > Secrets and variables > Actions"; exit 1; fi
           echo "DATABRICKS_HOST is set (length: ${#DATABRICKS_HOST} chars, starts with: ${DATABRICKS_HOST:0:8}...)"
           echo "DATABRICKS_TOKEN is set (length: ${#DATABRICKS_TOKEN} chars)"
-          echo "Using catalog_name=$CATALOG_NAME schema_name=$SCHEMA_NAME"
+          echo "Using catalog_name=$CATALOG_NAME schema_name=$SCHEMA_NAME existing_cluster_id=$EXISTING_CLUSTER_ID"
 
       - name: Validate bundle
-        run: databricks bundle validate --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME"
+        run: databricks bundle validate --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME,existing_cluster_id=$EXISTING_CLUSTER_ID"
 
       - name: Deploy bundle
-        run: databricks bundle deploy --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME"
+        run: databricks bundle deploy --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME,existing_cluster_id=$EXISTING_CLUSTER_ID"
 
       - name: Run batch job
-        run: databricks bundle run brightcart_batch_pipeline --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME"
+        run: databricks bundle run brightcart_batch_pipeline --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME,existing_cluster_id=$EXISTING_CLUSTER_ID"

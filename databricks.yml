@@ -11,22 +11,17 @@ variables:
     default: harpalsingh
   schema_name:
     default: brightcart
+  existing_cluster_id:
+    description: Existing all-purpose cluster ID to run the job tasks on
+    default: 0724-105653-1bw7ko28
 
 resources:
   jobs:
     brightcart_batch_pipeline:
       name: BrightCart Batch Pipeline
-      job_clusters:
-        - job_cluster_key: batch_cluster
-          new_cluster:
-            spark_version: 17.3.x-scala2.13
-            node_type_id: r5d.large
-            num_workers: 1
-            runtime_engine: PHOTON
-            data_security_mode: USER_ISOLATION
       tasks:
         - task_key: bronze_ingestion
-          job_cluster_key: batch_cluster
+          existing_cluster_id: ${var.existing_cluster_id}
           notebook_task:
             notebook_path: ./notebooks/02_bronze_ingestion.py
             base_parameters:
@@ -35,7 +30,7 @@ resources:
         - task_key: silver_enrichment
           depends_on:
             - task_key: bronze_ingestion
-          job_cluster_key: batch_cluster
+          existing_cluster_id: ${var.existing_cluster_id}
           notebook_task:
             notebook_path: ./notebooks/03_silver_enrichment.py
             base_parameters:
@@ -44,7 +39,7 @@ resources:
         - task_key: gold_aggregation
           depends_on:
             - task_key: silver_enrichment
-          job_cluster_key: batch_cluster
+          existing_cluster_id: ${var.existing_cluster_id}
           notebook_task:
             notebook_path: ./notebooks/04_gold_aggregation.py
             base_parameters:
