@@ -54,3 +54,6 @@ jobs:
 
       - name: Run batch job
         run: databricks bundle run brightcart_batch_pipeline --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME,existing_cluster_id=$EXISTING_CLUSTER_ID"
+
+      - name: Run streaming job
+        run: databricks bundle run brightcart_streaming_pipeline --target dev --var="catalog_name=$CATALOG_NAME,schema_name=$SCHEMA_NAME,existing_cluster_id=$EXISTING_CLUSTER_ID"
