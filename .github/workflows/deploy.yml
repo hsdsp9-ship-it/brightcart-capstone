@@ -19,6 +19,10 @@ on:
         required: false
         default: '0724-105653-1bw7ko28'
 
+concurrency:
+  group: deploy-brightcart-bundle
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

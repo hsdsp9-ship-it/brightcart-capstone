@@ -45,6 +45,7 @@ resources:
             base_parameters:
               catalog: ${var.catalog_name}
               schema: ${var.schema_name}
+      max_concurrent_runs: 1
       queue:
         enabled: true
 
