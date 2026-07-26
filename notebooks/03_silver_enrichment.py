@@ -11,6 +11,19 @@
 
 # COMMAND ----------
 
+# DBTITLE 1,Resolve bundle sys.path
+import sys, os
+
+try:
+    _nb_path = dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
+    _bundle_root = "/Workspace" + os.path.dirname(os.path.dirname(_nb_path))
+    if _bundle_root not in sys.path:
+        sys.path.insert(0, _bundle_root)
+except Exception:
+    pass
+
+# COMMAND ----------
+
 # DBTITLE 1,Project configuration
 from delta.tables import DeltaTable
 from pyspark.sql import functions as F

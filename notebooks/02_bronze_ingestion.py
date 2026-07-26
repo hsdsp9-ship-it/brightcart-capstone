@@ -9,6 +9,22 @@
 
 # COMMAND ----------
 
+# DBTITLE 1,Resolve bundle sys.path
+import sys, os
+
+# When running as a Databricks job task the bundle sync root is not on sys.path.
+# Resolve it dynamically so `from notebooks.config import ...` works for any
+# deployment target (dev / staging / prod) as well as interactive runs.
+try:
+    _nb_path = dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
+    _bundle_root = "/Workspace" + os.path.dirname(os.path.dirname(_nb_path))
+    if _bundle_root not in sys.path:
+        sys.path.insert(0, _bundle_root)
+except Exception:
+    pass  # Local / pytest run — conftest.py handles sys.path there
+
+# COMMAND ----------
+
 # DBTITLE 1,Project configuration
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType, DateType
