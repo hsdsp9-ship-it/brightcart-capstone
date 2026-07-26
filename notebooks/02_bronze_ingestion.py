@@ -85,7 +85,7 @@ customers_df = (
     .schema(customers_schema)
     .csv(CUSTOMERS_PATH)
     .withColumn("_ingest_ts", F.current_timestamp())
-    .withColumn("_source_file", F.input_file_name())
+    .withColumn("_source_file", F.col("_metadata.file_path"))
 )
 
 products_df = (
@@ -94,7 +94,7 @@ products_df = (
     .schema(products_schema)
     .csv(PRODUCTS_PATH)
     .withColumn("_ingest_ts", F.current_timestamp())
-    .withColumn("_source_file", F.input_file_name())
+    .withColumn("_source_file", F.col("_metadata.file_path"))
 )
 
 orders_df = (
@@ -103,7 +103,7 @@ orders_df = (
     .schema(orders_schema)
     .csv(ORDERS_PATH)
     .withColumn("_ingest_ts", F.current_timestamp())
-    .withColumn("_source_file", F.input_file_name())
+    .withColumn("_source_file", F.col("_metadata.file_path"))
 )
 
 logger.info("Read source CSVs: customers=%s products=%s orders=%s", customers_df.count(), products_df.count(), orders_df.count())
