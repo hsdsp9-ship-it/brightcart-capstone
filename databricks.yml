@@ -72,6 +72,56 @@ resources:
       queue:
         enabled: true
 
+    brightcart_full_pipeline:
+      name: BrightCart Full Pipeline
+      tasks:
+        - task_key: autoloader_ingestion
+          existing_cluster_id: ${var.existing_cluster_id}
+          notebook_task:
+            notebook_path: ./notebooks/05_autoloader_ingestion.py
+            base_parameters:
+              catalog: ${var.catalog_name}
+              schema: ${var.schema_name}
+        - task_key: bronze_ingestion
+          depends_on:
+            - task_key: autoloader_ingestion
+          existing_cluster_id: ${var.existing_cluster_id}
+          notebook_task:
+            notebook_path: ./notebooks/02_bronze_ingestion.py
+            base_parameters:
+              catalog: ${var.catalog_name}
+              schema: ${var.schema_name}
+        - task_key: silver_enrichment
+          depends_on:
+            - task_key: bronze_ingestion
+          existing_cluster_id: ${var.existing_cluster_id}
+          notebook_task:
+            notebook_path: ./notebooks/03_silver_enrichment.py
+            base_parameters:
+              catalog: ${var.catalog_name}
+              schema: ${var.schema_name}
+        - task_key: streaming_silver_gold
+          depends_on:
+            - task_key: bronze_ingestion
+          existing_cluster_id: ${var.existing_cluster_id}
+          notebook_task:
+            notebook_path: ./notebooks/06_streaming_silver_gold.py
+            base_parameters:
+              catalog: ${var.catalog_name}
+              schema: ${var.schema_name}
+        - task_key: gold_aggregation
+          depends_on:
+            - task_key: silver_enrichment
+          existing_cluster_id: ${var.existing_cluster_id}
+          notebook_task:
+            notebook_path: ./notebooks/04_gold_aggregation.py
+            base_parameters:
+              catalog: ${var.catalog_name}
+              schema: ${var.schema_name}
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+
 targets:
   dev:
     mode: development
