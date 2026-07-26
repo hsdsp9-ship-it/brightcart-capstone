@@ -77,7 +77,7 @@ gold_category_performance_df = (
     .orderBy(F.desc("revenue"), F.asc("product_name"))
 )
 
-gold_category_performance_df.write.mode("overwrite").format("delta").saveAsTable(GOLD_CATEGORY_PERFORMANCE)
+gold_category_performance_df.write.mode("overwrite").option("overwriteSchema", "true").format("delta").saveAsTable(GOLD_CATEGORY_PERFORMANCE)
 display(spark.table(GOLD_CATEGORY_PERFORMANCE))
 
 # COMMAND ----------
@@ -95,7 +95,7 @@ gold_customer_region_summary_df = (
     .orderBy(F.desc("customer_revenue"), F.asc("customer_name"))
 )
 
-gold_customer_region_summary_df.write.mode("overwrite").format("delta").saveAsTable(GOLD_CUSTOMER_REGION_SUMMARY)
+gold_customer_region_summary_df.write.mode("overwrite").option("overwriteSchema", "true").format("delta").saveAsTable(GOLD_CUSTOMER_REGION_SUMMARY)
 display(spark.table(GOLD_CUSTOMER_REGION_SUMMARY))
 
 # COMMAND ----------
