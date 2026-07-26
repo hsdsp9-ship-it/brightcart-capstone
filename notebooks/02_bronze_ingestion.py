@@ -12,23 +12,27 @@
 # DBTITLE 1,Project configuration
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType, DateType
+from notebooks.config import get_config
 
-dbutils.widgets.text("catalog", "harpalsingh")
-dbutils.widgets.text("schema", "brightcart")
+cfg = get_config()
 
-CATALOG = dbutils.widgets.get("catalog")
-SCHEMA = dbutils.widgets.get("schema")
-RAW_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/raw_data"
+CATALOG = cfg["catalog"]
+SCHEMA = cfg["schema"]
+RAW_VOLUME_PATH = cfg["raw_volume"]
 
-CUSTOMERS_PATH = f"{RAW_VOLUME_PATH}/customers.csv"
-PRODUCTS_PATH = f"{RAW_VOLUME_PATH}/products.csv"
-ORDERS_PATH = f"{RAW_VOLUME_PATH}/orders.csv"
+CUSTOMERS_PATH = cfg["customers_path"]
+PRODUCTS_PATH = cfg["products_path"]
+ORDERS_PATH = cfg["orders_path"]
 
 BRONZE_CUSTOMERS = f"{CATALOG}.{SCHEMA}.bronze_customers"
 BRONZE_PRODUCTS = f"{CATALOG}.{SCHEMA}.bronze_products"
 BRONZE_ORDERS = f"{CATALOG}.{SCHEMA}.bronze_orders"
 
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{SCHEMA}")
+
+from notebooks.logging_helper import get_logger
+
+logger = get_logger("02_bronze_ingestion")
 
 # COMMAND ----------
 
@@ -65,7 +69,7 @@ customers_df = (
     .schema(customers_schema)
     .csv(CUSTOMERS_PATH)
     .withColumn("_ingest_ts", F.current_timestamp())
-    .withColumn("_source_file", F.col("_metadata.file_path"))
+    .withColumn("_source_file", F.input_file_name())
 )
 
 products_df = (
@@ -74,7 +78,7 @@ products_df = (
     .schema(products_schema)
     .csv(PRODUCTS_PATH)
     .withColumn("_ingest_ts", F.current_timestamp())
-    .withColumn("_source_file", F.col("_metadata.file_path"))
+    .withColumn("_source_file", F.input_file_name())
 )
 
 orders_df = (
@@ -83,8 +87,10 @@ orders_df = (
     .schema(orders_schema)
     .csv(ORDERS_PATH)
     .withColumn("_ingest_ts", F.current_timestamp())
-    .withColumn("_source_file", F.col("_metadata.file_path"))
+    .withColumn("_source_file", F.input_file_name())
 )
+
+logger.info("Read source CSVs: customers=%s products=%s orders=%s", customers_df.count(), products_df.count(), orders_df.count())
 
 # COMMAND ----------
 
@@ -92,10 +98,7 @@ orders_df = (
 customers_df.write.mode("overwrite").format("delta").saveAsTable(BRONZE_CUSTOMERS)
 products_df.write.mode("overwrite").format("delta").saveAsTable(BRONZE_PRODUCTS)
 orders_df.write.mode("overwrite").format("delta").saveAsTable(BRONZE_ORDERS)
-
-print(f"Created: {BRONZE_CUSTOMERS}")
-print(f"Created: {BRONZE_PRODUCTS}")
-print(f"Created: {BRONZE_ORDERS}")
+logger.info("Created Bronze tables: %s, %s, %s", BRONZE_CUSTOMERS, BRONZE_PRODUCTS, BRONZE_ORDERS)
 
 # COMMAND ----------
 

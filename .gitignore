@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+venv/
+env/
+.venv/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+
+# Virtualenvs
+/.venv
+/venv
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# Databricks and local secrets
+.databrickscfg
+.dbx/
+.env
+.env.*
+secrets.json
+secrets/
+credentials/
+
+# Jupyter
+.ipynb_checkpoints
+out/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.swp

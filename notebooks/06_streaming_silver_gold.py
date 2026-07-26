@@ -11,19 +11,23 @@
 
 # DBTITLE 1,Project configuration
 from pyspark.sql import functions as F
+from notebooks.config import get_config
 
-dbutils.widgets.text("catalog", "harpalsingh")
-dbutils.widgets.text("schema", "brightcart")
+cfg = get_config()
 
-CATALOG = dbutils.widgets.get("catalog")
-SCHEMA = dbutils.widgets.get("schema")
-CHECKPOINT_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/checkpoints"
+CATALOG = cfg["catalog"]
+SCHEMA = cfg["schema"]
+CHECKPOINT_VOLUME_PATH = cfg["checkpoint_volume"]
 
 BRONZE_CUSTOMERS = f"{CATALOG}.{SCHEMA}.bronze_customers"
 BRONZE_PRODUCTS = f"{CATALOG}.{SCHEMA}.bronze_products"
 BRONZE_ORDERS_STREAM = f"{CATALOG}.{SCHEMA}.bronze_orders_stream"
 SILVER_ENRICHED_ORDERS_STREAM = f"{CATALOG}.{SCHEMA}.silver_enriched_orders_stream"
 STREAMING_CHECKPOINT = f"{CHECKPOINT_VOLUME_PATH}/silver_enriched_orders_stream"
+
+from notebooks.logging_helper import get_logger
+
+logger = get_logger("06_streaming_silver_gold")
 
 # COMMAND ----------
 
@@ -62,6 +66,11 @@ def upsert_silver_stream(batch_df, batch_id):
     # Unique per-batch view name avoids the Spark Connect stale temp-view
     # anti-pattern (SCPAP003) from reusing a static name across micro-batches.
     view_name = f"silver_stream_batch_{batch_id}"
+    try:
+        record_count = batch_df.count()
+    except Exception:
+        record_count = None
+    logger.info("Processing micro-batch %s (estimated rows=%s)", batch_id, record_count)
     batch_df.createOrReplaceTempView(view_name)
     batch_df.sparkSession.sql(f"""
         CREATE TABLE IF NOT EXISTS {SILVER_ENRICHED_ORDERS_STREAM} (
@@ -83,13 +92,18 @@ def upsert_silver_stream(batch_df, batch_id):
         ) USING DELTA
     """)
 
-    batch_df.sparkSession.sql(f"""
-        MERGE INTO {SILVER_ENRICHED_ORDERS_STREAM} AS target
-        USING {view_name} AS source
-        ON target.order_id = source.order_id
-        WHEN MATCHED THEN UPDATE SET *
-        WHEN NOT MATCHED THEN INSERT *
-    """)
+    try:
+        batch_df.sparkSession.sql(f"""
+            MERGE INTO {SILVER_ENRICHED_ORDERS_STREAM} AS target
+            USING {view_name} AS source
+            ON target.order_id = source.order_id
+            WHEN MATCHED THEN UPDATE SET *
+            WHEN NOT MATCHED THEN INSERT *
+        """)
+        logger.info("Micro-batch %s merged into %s", batch_id, SILVER_ENRICHED_ORDERS_STREAM)
+    except Exception as e:
+        logger.exception("Failed to merge micro-batch %s: %s", batch_id, e)
+        raise
     batch_df.sparkSession.catalog.dropTempView(view_name)
 
 # COMMAND ----------

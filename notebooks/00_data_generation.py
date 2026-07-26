@@ -18,19 +18,20 @@
 # COMMAND ----------
 
 # DBTITLE 1,Project configuration
-dbutils.widgets.text("catalog", "harpalsingh")
-dbutils.widgets.text("schema", "brightcart")
+from notebooks.config import get_config
 
-CATALOG = dbutils.widgets.get("catalog")
-SCHEMA = dbutils.widgets.get("schema")
-RAW_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/raw_data"
-CHECKPOINT_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/checkpoints"
+cfg = get_config()
 
-CUSTOMERS_PATH = f"{RAW_VOLUME_PATH}/customers.csv"
-PRODUCTS_PATH = f"{RAW_VOLUME_PATH}/products.csv"
-ORDERS_PATH = f"{RAW_VOLUME_PATH}/orders.csv"
-INCOMING_ORDERS_DIR = f"{RAW_VOLUME_PATH}/incoming_orders"
-SCHEMA_TRACKING_DIR = f"{CHECKPOINT_VOLUME_PATH}/schema_tracking"
+CATALOG = cfg["catalog"]
+SCHEMA = cfg["schema"]
+RAW_VOLUME_PATH = cfg["raw_volume"]
+CHECKPOINT_VOLUME_PATH = cfg["checkpoint_volume"]
+
+CUSTOMERS_PATH = cfg["customers_path"]
+PRODUCTS_PATH = cfg["products_path"]
+ORDERS_PATH = cfg["orders_path"]
+INCOMING_ORDERS_DIR = cfg["incoming_orders_dir"]
+SCHEMA_TRACKING_DIR = cfg["schema_tracking_dir"]
 
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{SCHEMA}")
 spark.sql(f"CREATE VOLUME IF NOT EXISTS {CATALOG}.{SCHEMA}.raw_data")
@@ -44,6 +45,10 @@ print({
     "checkpoints": CHECKPOINT_VOLUME_PATH,
     "incoming_orders": INCOMING_ORDERS_DIR,
 })
+
+from notebooks.logging_helper import get_logger
+
+logger = get_logger("00_data_generation")
 
 # COMMAND ----------
 
@@ -118,6 +123,8 @@ for order_id in range(1, N_ORDERS + 1):
         random.choices(statuses, weights=status_weights, k=1)[0],
     ))
 
+logger.info("Beginning synthetic data generation: customers=%s products=%s orders=%s", N_CUSTOMERS, N_PRODUCTS, N_ORDERS)
+
 customers_schema = StructType([
     StructField("customer_id", IntegerType(), False),
     StructField("customer_name", StringType(), False),
@@ -162,10 +169,9 @@ for source_dir, final_file in [
         raise ValueError(f"No part file found in {source_dir}")
     dbutils.fs.cp(part_files[0], final_file, True)
     dbutils.fs.rm(source_dir, True)
-
-print("Source files created:")
+logger.info("Source files created in %s", RAW_VOLUME_PATH)
 for f in dbutils.fs.ls(RAW_VOLUME_PATH):
-    print(f.path)
+    logger.info(" - %s", f.path)
 
 # COMMAND ----------
 
@@ -249,4 +255,4 @@ def write_incremental_orders(batch_size: int = 25, start_order_id: int = None):
     return final_file
 
 new_file = write_incremental_orders()
-print(f"Incremental batch written to: {new_file}")
+logger.info("Incremental batch written to: %s", new_file)

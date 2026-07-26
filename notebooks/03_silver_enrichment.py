@@ -14,12 +14,12 @@
 # DBTITLE 1,Project configuration
 from delta.tables import DeltaTable
 from pyspark.sql import functions as F
+from notebooks.config import get_config
 
-dbutils.widgets.text("catalog", "harpalsingh")
-dbutils.widgets.text("schema", "brightcart")
+cfg = get_config()
 
-CATALOG = dbutils.widgets.get("catalog")
-SCHEMA = dbutils.widgets.get("schema")
+CATALOG = cfg["catalog"]
+SCHEMA = cfg["schema"]
 
 BRONZE_CUSTOMERS = f"{CATALOG}.{SCHEMA}.bronze_customers"
 BRONZE_PRODUCTS = f"{CATALOG}.{SCHEMA}.bronze_products"

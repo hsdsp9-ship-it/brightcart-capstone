@@ -11,12 +11,12 @@
 
 # DBTITLE 1,Project configuration
 from pyspark.sql import functions as F
+from notebooks.config import get_config
 
-dbutils.widgets.text("catalog", "harpalsingh")
-dbutils.widgets.text("schema", "brightcart")
+cfg = get_config()
 
-CATALOG = dbutils.widgets.get("catalog")
-SCHEMA = dbutils.widgets.get("schema")
+CATALOG = cfg["catalog"]
+SCHEMA = cfg["schema"]
 
 SILVER_ENRICHED_ORDERS = f"{CATALOG}.{SCHEMA}.silver_enriched_orders"
 GOLD_DAILY_REVENUE = f"{CATALOG}.{SCHEMA}.gold_daily_revenue"

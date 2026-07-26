@@ -11,16 +11,16 @@
 
 # DBTITLE 1,Project configuration
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DateType
+from notebooks.config import get_config
 
-dbutils.widgets.text("catalog", "harpalsingh")
-dbutils.widgets.text("schema", "brightcart")
+cfg = get_config()
 
-CATALOG = dbutils.widgets.get("catalog")
-SCHEMA = dbutils.widgets.get("schema")
-RAW_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/raw_data"
-CHECKPOINT_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/checkpoints"
+CATALOG = cfg["catalog"]
+SCHEMA = cfg["schema"]
+RAW_VOLUME_PATH = cfg["raw_volume"]
+CHECKPOINT_VOLUME_PATH = cfg["checkpoint_volume"]
 
-INCOMING_ORDERS_DIR = f"{RAW_VOLUME_PATH}/incoming_orders"
+INCOMING_ORDERS_DIR = cfg["incoming_orders_dir"]
 AUTOLOADER_SCHEMA_TRACKING = f"{CHECKPOINT_VOLUME_PATH}/schema_tracking/bronze_orders_stream"
 AUTOLOADER_CHECKPOINT = f"{CHECKPOINT_VOLUME_PATH}/bronze_orders_stream"
 BRONZE_ORDERS_STREAM = f"{CATALOG}.{SCHEMA}.bronze_orders_stream"
@@ -34,10 +34,18 @@ orders_stream_schema = StructType([
     StructField("status", StringType(), False),
 ])
 
+from notebooks.logging_helper import get_logger
+
+logger = get_logger("05_autoloader_ingestion")
+
 # COMMAND ----------
 
 # DBTITLE 1,Inspect incoming files
-display(dbutils.fs.ls(INCOMING_ORDERS_DIR))
+files = dbutils.fs.ls(INCOMING_ORDERS_DIR)
+logger.info("Incoming orders directory: %s (files=%s)", INCOMING_ORDERS_DIR, len(files))
+for f in files:
+    logger.info(" - %s", f.path)
+display(files)
 
 # COMMAND ----------
 

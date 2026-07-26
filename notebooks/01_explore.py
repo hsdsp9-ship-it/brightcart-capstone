@@ -17,17 +17,17 @@
 
 # DBTITLE 1,Project configuration
 from pyspark.sql import functions as F
+from notebooks.config import get_config
 
-dbutils.widgets.text("catalog", "harpalsingh")
-dbutils.widgets.text("schema", "brightcart")
+cfg = get_config()
 
-CATALOG = dbutils.widgets.get("catalog")
-SCHEMA = dbutils.widgets.get("schema")
-RAW_VOLUME_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/raw_data"
+CATALOG = cfg["catalog"]
+SCHEMA = cfg["schema"]
+RAW_VOLUME_PATH = cfg["raw_volume"]
 
-CUSTOMERS_PATH = f"{RAW_VOLUME_PATH}/customers.csv"
-PRODUCTS_PATH = f"{RAW_VOLUME_PATH}/products.csv"
-ORDERS_PATH = f"{RAW_VOLUME_PATH}/orders.csv"
+CUSTOMERS_PATH = cfg["customers_path"]
+PRODUCTS_PATH = cfg["products_path"]
+ORDERS_PATH = cfg["orders_path"]
 
 source_paths = {
     "customers": CUSTOMERS_PATH,
