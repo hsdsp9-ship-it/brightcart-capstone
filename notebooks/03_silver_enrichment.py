@@ -106,84 +106,20 @@ display(spark.table(SILVER_ENRICHED_ORDERS))
 # COMMAND ----------
 
 # DBTITLE 1,Demonstrate Delta INSERT and UPDATE
-spark.sql(f"""
-INSERT INTO {SILVER_ENRICHED_ORDERS}
-SELECT
-  999001 AS order_id,
-  1 AS customer_id,
-  'Customer 001' AS customer_name,
-  'North' AS region,
-  DATE('2023-01-05') AS signup_date,
-  1 AS product_id,
-  'Product 001' AS product_name,
-  'Electronics' AS category,
-  199.99 AS unit_price,
-  1 AS quantity,
-  DATE('2024-05-20') AS order_date,
-  'PENDING' AS status,
-  false AS is_cancelled,
-  199.99 AS total_amount,
-  current_timestamp() AS silver_updated_ts
-""")
-
-spark.sql(f"""
-UPDATE {SILVER_ENRICHED_ORDERS}
-SET status = 'COMPLETED',
-    total_amount = quantity * unit_price,
-    silver_updated_ts = current_timestamp()
-WHERE order_id = 999001
-""")
+# DEMO cell disabled for production runs — fake test orders must not pollute Silver/Gold
+pass
 
 # COMMAND ----------
 
 # DBTITLE 1,Demonstrate Delta DELETE
-spark.sql(f"""
-INSERT INTO {SILVER_ENRICHED_ORDERS}
-SELECT
-  999002 AS order_id,
-  2 AS customer_id,
-  'Customer 002' AS customer_name,
-  'South' AS region,
-  DATE('2023-02-02') AS signup_date,
-  2 AS product_id,
-  'Product 002' AS product_name,
-  'Accessories' AS category,
-  49.99 AS unit_price,
-  1 AS quantity,
-  DATE('2024-05-20') AS order_date,
-  'CANCELLED' AS status,
-  true AS is_cancelled,
-  49.99 AS total_amount,
-  current_timestamp() AS silver_updated_ts
-""")
-
-spark.sql(f"DELETE FROM {SILVER_ENRICHED_ORDERS} WHERE order_id = 999002")
+# DEMO cell disabled for production runs — fake test orders must not pollute Silver/Gold
+pass
 
 # COMMAND ----------
 
 # DBTITLE 1,Demonstrate Delta MERGE
-merge_source_df = spark.createDataFrame([
-    (999001, 1, 'Customer 001', 'North', '2023-01-05', 1, 'Product 001', 'Electronics', 199.99, 2, '2024-05-20', 'COMPLETED', False, 399.98),
-    (999003, 3, 'Customer 003', 'East', '2023-03-03', 3, 'Product 003', 'Home', 89.50, 1, '2024-05-21', 'COMPLETED', False, 89.50),
-], [
-    'order_id', 'customer_id', 'customer_name', 'region', 'signup_date', 'product_id', 'product_name',
-    'category', 'unit_price', 'quantity', 'order_date', 'status', 'is_cancelled', 'total_amount'
-]).select(
-    'order_id', 'customer_id', 'customer_name', 'region', F.to_date('signup_date').alias('signup_date'),
-    'product_id', 'product_name', 'category', 'unit_price', 'quantity', F.to_date('order_date').alias('order_date'),
-    'status', 'is_cancelled', 'total_amount'
-).withColumn('silver_updated_ts', F.current_timestamp())
-
-delta_target = DeltaTable.forName(spark, SILVER_ENRICHED_ORDERS)
-(
-    delta_target.alias('t')
-    .merge(merge_source_df.alias('s'), 't.order_id = s.order_id')
-    .whenMatchedUpdateAll()
-    .whenNotMatchedInsertAll()
-    .execute()
-)
-
-display(spark.table(SILVER_ENRICHED_ORDERS).filter(F.col('order_id') >= 999001).orderBy('order_id'))
+# DEMO cell disabled for production runs — fake test orders must not pollute Silver/Gold
+pass
 
 # COMMAND ----------
 

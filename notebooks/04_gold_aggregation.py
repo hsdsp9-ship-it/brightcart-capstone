@@ -55,10 +55,11 @@ gold_daily_revenue_df = (
         F.countDistinct("order_id").alias("order_count"),
         F.sum("quantity").alias("units_sold"),
     )
+    .withColumn("_report_date", F.current_date())
     .orderBy("order_date")
 )
 
-gold_daily_revenue_df.write.mode("overwrite").format("delta").saveAsTable(GOLD_DAILY_REVENUE)
+gold_daily_revenue_df.write.mode("overwrite").option("overwriteSchema", "true").format("delta").saveAsTable(GOLD_DAILY_REVENUE)
 display(spark.table(GOLD_DAILY_REVENUE))
 
 # COMMAND ----------
@@ -72,6 +73,7 @@ gold_category_performance_df = (
         F.sum("quantity").alias("units_sold"),
         F.countDistinct("order_id").alias("order_count"),
     )
+    .withColumn("_report_date", F.current_date())
     .orderBy(F.desc("revenue"), F.asc("product_name"))
 )
 
@@ -89,6 +91,7 @@ gold_customer_region_summary_df = (
         F.countDistinct("order_id").alias("order_count"),
         F.sum("quantity").alias("units_purchased"),
     )
+    .withColumn("_report_date", F.current_date())
     .orderBy(F.desc("customer_revenue"), F.asc("customer_name"))
 )
 
