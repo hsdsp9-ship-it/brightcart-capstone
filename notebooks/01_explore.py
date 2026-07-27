@@ -107,11 +107,14 @@ display(orders_df.groupBy("status").count().orderBy("status"))
 # MAGIC %md
 # MAGIC ## Findings to carry forward
 # MAGIC
-# MAGIC Update this markdown cell after reviewing the outputs above.
+# MAGIC | Check | Result | Action for Bronze / Silver |
+# MAGIC | --- | --- | --- |
+# MAGIC | **Nulls** | **None** — 0 nulls in all key columns across all three datasets | No imputation needed; `dropna` in Silver is a defensive guard |
+# MAGIC | **Duplicate keys** | **None** — 0 duplicate `customer_id`, `product_id`, or `order_id` | `dropDuplicates` in Silver is a defensive guard |
+# MAGIC | **Data types** | Inferred types match the expected schema (`customer_id`/`product_id`/`order_id`: integer, `unit_price`: double, `signup_date`/`order_date`: date) | Use explicit `StructType` in Bronze (no `inferSchema`) to lock in types |
+# MAGIC | **Region values** | `East` (250), `North` (243), `South` (243), `West` (264) — all four valid values, balanced distribution | No cleaning needed |
+# MAGIC | **Product categories** | `Electronics`, `Accessories`, `Home`, `Office` — all four expected values present | No cleaning needed |
+# MAGIC | **Order status** | `COMPLETED`, `CANCELLED`, `PENDING` — all three expected values, no unexpected strings | `CANCELLED` orders kept in Silver with `is_cancelled = true` flag; excluded from Gold revenue aggregations |
+# MAGIC | **Row counts** | 1,000 customers · 1,000 products · 1,000 orders | Fully referentially intact: all orders have matching customer and product keys |
 # MAGIC
-# MAGIC Suggested points to record:
-# MAGIC * Whether any nulls need to be dropped or imputed
-# MAGIC * Whether any duplicate keys exist
-# MAGIC * Whether inferred data types match the expected business schema
-# MAGIC * Whether any unexpected `region`, `category`, or `status` values appear
-# MAGIC * Any notes that should become explicit cleaning rules in the Bronze or Silver layers
+# MAGIC **Conclusion:** The synthetic dataset is clean. All Bronze → Silver cleaning steps (`dropna`, `dropDuplicates`, type casts) act as defensive safeguards rather than active repairs. The only business logic decision needed is how to handle `CANCELLED` orders — they are retained in Silver and flagged with `is_cancelled`, then filtered out of Gold aggregations.

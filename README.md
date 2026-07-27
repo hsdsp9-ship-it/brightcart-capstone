@@ -20,10 +20,20 @@ All tables live under the `harpalsingh.brightcart` schema. Raw files and streami
 
 ## Deployment (Databricks Asset Bundle)
 
-```
-databricks bundle validate --var="databricks_host=<workspace-url>"
-databricks bundle deploy --target dev --var="databricks_host=<workspace-url>"
-databricks bundle run brightcart_batch_pipeline --target dev --var="databricks_host=<workspace-url>"
+Authentication is handled via environment variables (the `databricks.yml` does not embed the host):
+
+```bash
+export DATABRICKS_HOST=https://<your-workspace>.azuredatabricks.net
+export DATABRICKS_TOKEN=<personal-access-token>
+
+# Validate, deploy, then run
+databricks bundle validate --target dev
+databricks bundle deploy --target dev
+databricks bundle run brightcart_batch_pipeline --target dev
+
+# Override catalog/schema/cluster at deploy time if needed
+databricks bundle deploy --target dev \
+  --var="catalog_name=mycat,schema_name=myschema,existing_cluster_id=<cluster-id>"
 ```
 
 ## CI/CD
