@@ -46,6 +46,58 @@ display(active_orders_df)
 
 # COMMAND ----------
 
+# DBTITLE 1,Merge stream data into active_orders
+# ── Enrich bronze_orders_stream and union with batch silver ───────────────────────
+# bronze_orders_stream is fed by 08_daily_data_generator (today's orders)
+# and by any other incremental CSV files Auto Loader has picked up.
+# Union it with the static batch silver so gold tables grow over time.
+
+BRONZE_CUSTOMERS     = f"{CATALOG}.{SCHEMA}.bronze_customers"
+BRONZE_PRODUCTS      = f"{CATALOG}.{SCHEMA}.bronze_products"
+BRONZE_ORDERS_STREAM = f"{CATALOG}.{SCHEMA}.bronze_orders_stream"
+
+# Column order must exactly match silver_enriched_orders for unionByName
+SILVER_COLS = [
+    "order_id", "customer_id", "customer_name", "region", "signup_date",
+    "product_id", "product_name", "category", "unit_price",
+    "quantity", "order_date", "status", "is_cancelled", "total_amount", "_ingested_at"
+]
+
+try:
+    stream_raw_df = spark.table(BRONZE_ORDERS_STREAM)
+    stream_count  = stream_raw_df.count()
+
+    if stream_count > 0:
+        cust_df = spark.table(BRONZE_CUSTOMERS).select(
+            "customer_id", "customer_name", "region", "signup_date")
+        prod_df = spark.table(BRONZE_PRODUCTS).select(
+            "product_id", "product_name", "category", "unit_price")
+
+        stream_enriched_df = (
+            stream_raw_df
+            .join(cust_df, on="customer_id", how="left")
+            .join(prod_df, on="product_id",  how="left")
+            .withColumn("is_cancelled", F.col("status") == "CANCELLED")
+            .withColumn("total_amount",  F.round(F.col("unit_price") * F.col("quantity"), 2))
+            .withColumn("_ingested_at",  F.current_timestamp())
+            .select(*SILVER_COLS)
+        )
+
+        # Union batch + stream; if same order_id exists in both, stream wins
+        combined_df     = silver_df.unionByName(stream_enriched_df).dropDuplicates(["order_id"])
+        active_orders_df = combined_df.filter(~F.col("is_cancelled"))
+
+        batch_count  = silver_df.count()
+        active_count = active_orders_df.count()
+        print(f"✅ Stream merged: {batch_count:,} batch + {stream_count:,} stream = {active_count:,} active orders")
+    else:
+        print("ℹ️  bronze_orders_stream is empty — using batch silver only")
+
+except Exception as e:
+    print(f"⚠️  Could not load bronze_orders_stream ({e}) — using batch silver only")
+
+# COMMAND ----------
+
 # DBTITLE 1,Build gold_daily_revenue
 gold_daily_revenue_df = (
     active_orders_df
