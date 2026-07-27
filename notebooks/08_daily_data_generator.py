@@ -100,19 +100,18 @@ print("  ...")
 
 # DBTITLE 1,Write CSV to landing zone
 output_filename = f"orders_incremental_{TIMESTAMP}.csv"
-local_tmp_path  = f"/tmp/{output_filename}"
+volume_dest     = f"{INCOMING_ORDERS_DIR}/{output_filename}"
 
-# Write to local /tmp first, then copy to the Unity Catalog Volume
-with open(local_tmp_path, "w", newline="") as f:
+# Write directly to the UC Volume path using standard Python open().
+# UC Volumes (/Volumes/...) are accessible via Python file I/O on Shared clusters.
+# NEVER use /tmp/ + dbutils.fs.cp — /tmp/ is blocked on Shared UC clusters.
+with open(volume_dest, "w", newline="") as f:
     writer = csv.DictWriter(
         f,
         fieldnames=["order_id", "customer_id", "product_id", "quantity", "order_date", "status"]
     )
     writer.writeheader()
     writer.writerows(orders)
-
-volume_dest = f"{INCOMING_ORDERS_DIR}/{output_filename}"
-dbutils.fs.cp(f"file:{local_tmp_path}", volume_dest)
 
 print(f"✅ Dropped {N_ORDERS} new orders into the Auto Loader landing zone")
 print(f"   File      : {volume_dest}")
