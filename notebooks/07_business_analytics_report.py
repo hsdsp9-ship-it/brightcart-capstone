@@ -788,3 +788,133 @@ with open(report_path, "w", encoding="utf-8") as f:
 
 print(f"HTML report written to: {report_path}")
 print(f"File size: {len(html_content):,} bytes")
+
+# COMMAND ----------
+
+# DBTITLE 1,Section 10 — Email report header
+# MAGIC %md
+# MAGIC ## 📧 Section 10 — Email the HTML Report
+# MAGIC
+# MAGIC Reads the generated `BRIGHTCART_REPORT_2024.html` and emails it to **hsdsp9@gmail.com** via Gmail SMTP.
+# MAGIC
+# MAGIC Credentials are pulled from the Databricks Secret scope `brightcart`:
+# MAGIC - `report_sender_email` — the Gmail address that sends the report
+# MAGIC - `report_sender_password` — a Gmail **App Password** (not your login password)
+# MAGIC
+# MAGIC See `SECRETS_SETUP.md` in the repo root for one-time setup instructions.
+
+# COMMAND ----------
+
+# DBTITLE 1,Send HTML report via email
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+from datetime import datetime
+
+RECIPIENT_EMAIL = "hsdsp9@gmail.com"
+REPORT_PATH     = "/Workspace/Users/harpalsingh031@gmail.com/brightcart-capstone/BRIGHTCART_REPORT_2024.html"
+
+# ── Load credentials from Databricks Secrets ───────────────────────────────
+try:
+    sender_email    = dbutils.secrets.get(scope="brightcart", key="report_sender_email")
+    sender_password = dbutils.secrets.get(scope="brightcart", key="report_sender_password")
+except Exception as e:
+    raise RuntimeError(
+        "\n\u274c Missing email credentials in Databricks Secrets. "
+        "Run these commands once (see SECRETS_SETUP.md):\n"
+        "  databricks secrets create-scope brightcart\n"
+        "  databricks secrets put-secret brightcart report_sender_email   --string-value 'your@gmail.com'\n"
+        "  databricks secrets put-secret brightcart report_sender_password --string-value 'your-gmail-app-password'\n"
+        f"Original error: {e}"
+    )
+
+# ── Read the HTML report ──────────────────────────────────────────────────────────────
+with open(REPORT_PATH, "r", encoding="utf-8") as f:
+    html_content = f.read()
+
+today = datetime.now().strftime("%Y-%m-%d")
+
+# ── Build email message ──────────────────────────────────────────────────────────────
+msg = MIMEMultipart("mixed")
+msg["Subject"] = f"BrightCart Daily Analytics Report — {today}"
+msg["From"]    = f"BrightCart Analytics <{sender_email}>"
+msg["To"]      = RECIPIENT_EMAIL
+
+# Part 1: HTML body — KPI summary table rendered directly in the email
+body_html = f"""
+<html><body style="font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#f4f6f9;">
+<div style="max-width:680px;margin:30px auto;background:#fff;border-radius:12px;
+            padding:36px 40px;box-shadow:0 2px 10px rgba(0,0,0,.1);">
+  <div style="background:linear-gradient(135deg,#1a237e,#283593);border-radius:8px;
+              padding:24px 28px;margin-bottom:28px;">
+    <h1 style="color:#fff;margin:0 0 6px;font-size:1.5em;">🛒 BrightCart Daily Analytics Report</h1>
+    <p style="color:rgba(255,255,255,.8);margin:0;font-size:.95em;">Generated on {today} &middot; Auto-delivered by Databricks pipeline</p>
+  </div>
+
+  <h2 style="color:#1a237e;font-size:1.1em;margin-bottom:12px;">Executive KPI Summary</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:.95em;">
+    <thead>
+      <tr style="background:#e8eaf6;">
+        <th style="padding:10px 14px;text-align:left;color:#283593;">Metric</th>
+        <th style="padding:10px 14px;text-align:right;color:#283593;">Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:9px 14px;border-bottom:1px solid #f0f0f0;">Total Revenue (2024)</td>
+          <td style="padding:9px 14px;text-align:right;font-weight:700;color:#1a237e;border-bottom:1px solid #f0f0f0;">${total_revenue:,.2f}</td></tr>
+      <tr style="background:#fafafa;"><td style="padding:9px 14px;border-bottom:1px solid #f0f0f0;">Total Orders</td>
+          <td style="padding:9px 14px;text-align:right;border-bottom:1px solid #f0f0f0;">{int(total_orders):,}</td></tr>
+      <tr><td style="padding:9px 14px;border-bottom:1px solid #f0f0f0;">Total Units Sold</td>
+          <td style="padding:9px 14px;text-align:right;border-bottom:1px solid #f0f0f0;">{int(total_units):,}</td></tr>
+      <tr style="background:#fafafa;"><td style="padding:9px 14px;border-bottom:1px solid #f0f0f0;">Avg Order Value</td>
+          <td style="padding:9px 14px;text-align:right;border-bottom:1px solid #f0f0f0;">${avg_order_value:,.2f}</td></tr>
+      <tr><td style="padding:9px 14px;border-bottom:1px solid #f0f0f0;">Top Revenue Category</td>
+          <td style="padding:9px 14px;text-align:right;border-bottom:1px solid #f0f0f0;">{top_category}</td></tr>
+      <tr style="background:#fafafa;"><td style="padding:9px 14px;">Top Region</td>
+          <td style="padding:9px 14px;text-align:right;">{top_region_row}</td></tr>
+    </tbody>
+  </table>
+
+  <div style="background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:0 6px 6px 0;
+              padding:14px 18px;margin:24px 0;">
+    <strong style="color:#1b5e20;">Full report attached</strong>
+    <p style="color:#2e7d32;margin:4px 0 0;font-size:.9em;">
+      Open <strong>BRIGHTCART_REPORT_{today}.html</strong> in any browser to view
+      all 8 interactive charts and the complete business analysis.
+    </p>
+  </div>
+
+  <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+  <p style="color:#aaa;font-size:.8em;margin:0;">
+    BrightCart Retail Analytics Pipeline &middot; Databricks Capstone &middot; Auto-generated by notebook 07_business_analytics_report
+  </p>
+</div>
+</body></html>
+"""
+msg.attach(MIMEText(body_html, "html"))
+
+# Part 2: Attach the full HTML report file
+attachment = MIMEBase("text", "html")
+attachment.set_payload(html_content.encode("utf-8"))
+encoders.encode_base64(attachment)
+attachment.add_header("Content-Disposition", "attachment",
+                      filename=f"BRIGHTCART_REPORT_{today}.html")
+msg.attach(attachment)
+
+# ── Send via Gmail SMTP ──────────────────────────────────────────────────────────────
+try:
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, RECIPIENT_EMAIL, msg.as_string())
+    print(f"✅ Report email sent successfully!")
+    print(f"   To          : {RECIPIENT_EMAIL}")
+    print(f"   Subject     : {msg['Subject']}")
+    print(f"   Attachment  : BRIGHTCART_REPORT_{today}.html ({len(html_content)/1024:.1f} KB)")
+except smtplib.SMTPAuthenticationError:
+    raise RuntimeError(
+        "❌ Gmail SMTP authentication failed.\n"
+        "Make sure report_sender_password is a Gmail App Password, not your account login password.\n"
+        "Generate one at: https://myaccount.google.com/apppasswords"
+    )
