@@ -132,7 +132,8 @@ resources:
             - task_key: gold_aggregation
           existing_cluster_id: ${var.existing_cluster_id}
           notebook_task:
-            notebook_path: ./notebooks/07_business_analytics_report.py
+            notebook_path: /Workspace/Users/harpalsingh031@gmail.com/brightcart-capstone/notebooks/07_business_analytics_report
+            source: WORKSPACE
             base_parameters:
               catalog: ${var.catalog_name}
               schema: ${var.schema_name}
