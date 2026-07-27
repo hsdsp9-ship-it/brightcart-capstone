@@ -78,6 +78,11 @@ resources:
         quartz_cron_expression: "0 0 2 * * ?"
         timezone_id: "UTC"
         pause_status: "UNPAUSED"
+      email_notifications:
+        on_success:
+          - hsdsp9@gmail.com
+        on_failure:
+          - hsdsp9@gmail.com
       tasks:
         - task_key: autoloader_ingestion
           existing_cluster_id: ${var.existing_cluster_id}
@@ -119,6 +124,15 @@ resources:
           existing_cluster_id: ${var.existing_cluster_id}
           notebook_task:
             notebook_path: ./notebooks/04_gold_aggregation.py
+            base_parameters:
+              catalog: ${var.catalog_name}
+              schema: ${var.schema_name}
+        - task_key: business_analytics_report
+          depends_on:
+            - task_key: gold_aggregation
+          existing_cluster_id: ${var.existing_cluster_id}
+          notebook_task:
+            notebook_path: ./notebooks/07_business_analytics_report.py
             base_parameters:
               catalog: ${var.catalog_name}
               schema: ${var.schema_name}
