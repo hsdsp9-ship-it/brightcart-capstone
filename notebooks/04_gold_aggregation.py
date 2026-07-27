@@ -56,8 +56,11 @@ BRONZE_CUSTOMERS     = f"{CATALOG}.{SCHEMA}.bronze_customers"
 BRONZE_PRODUCTS      = f"{CATALOG}.{SCHEMA}.bronze_products"
 BRONZE_ORDERS_STREAM = f"{CATALOG}.{SCHEMA}.bronze_orders_stream"
 
-# Column order must exactly match silver_enriched_orders for unionByName
-SILVER_COLS = [
+# Derive the columns to select for the stream-enriched DataFrame.
+# Only include columns that can be built from bronze (drop silver-only audit
+# columns like silver_updated_ts — they will be filled as null via
+# allowMissingColumns=True in the unionByName below).
+STREAM_COLS = [
     "order_id", "customer_id", "customer_name", "region", "signup_date",
     "product_id", "product_name", "category", "unit_price",
     "quantity", "order_date", "status", "is_cancelled", "total_amount", "_ingested_at"
@@ -80,11 +83,16 @@ try:
             .withColumn("is_cancelled", F.col("status") == "CANCELLED")
             .withColumn("total_amount",  F.round(F.col("unit_price") * F.col("quantity"), 2))
             .withColumn("_ingested_at",  F.current_timestamp())
-            .select(*SILVER_COLS)
+            .select(*STREAM_COLS)
         )
 
-        # Union batch + stream; if same order_id exists in both, stream wins
-        combined_df     = silver_df.unionByName(stream_enriched_df).dropDuplicates(["order_id"])
+        # Union batch + stream.
+        # allowMissingColumns=True fills null for any silver-only audit columns
+        # (e.g. silver_updated_ts) that don’t exist in the stream-enriched data.
+        # Downstream gold cells only use business columns so nulls are harmless.
+        combined_df = silver_df.unionByName(
+            stream_enriched_df, allowMissingColumns=True
+        ).dropDuplicates(["order_id"])
         active_orders_df = combined_df.filter(~F.col("is_cancelled"))
 
         batch_count  = silver_df.count()
